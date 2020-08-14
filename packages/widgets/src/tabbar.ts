@@ -68,6 +68,7 @@ class TabBar<T> extends Widget {
     this.setFlag(Widget.Flag.DisallowLayout);
     this.tabsMovable = options.tabsMovable || false;
     this.allowDeselect = options.allowDeselect || false;
+    this.addButtonEnabled = options.addButtonEnabled || false;
     this.insertBehavior = options.insertBehavior || 'select-tab-if-needed';
     this.removeBehavior = options.removeBehavior || 'select-tab-after';
     this.renderer = options.renderer || TabBar.defaultRenderer;
@@ -126,6 +127,14 @@ class TabBar<T> extends Widget {
   }
 
   /**
+   * A signal emitted when the tabbar add button is clicked.
+   *
+   */
+  get tabAddRequested(): ISignal<this, TabBar.ITabAddRequestedArgs> {
+    return this._tabAddRequested;
+  }
+
+  /**
    * A signal emitted when a tab close icon is clicked.
    *
    * #### Notes
@@ -171,6 +180,12 @@ class TabBar<T> extends Widget {
    * Tabs can be always be deselected programmatically.
    */
   allowDeselect: boolean;
+
+  /**
+   * Whether the add button is addButtonEnabled.
+   *
+   */
+  addButtonEnabled: boolean;
 
   /**
    * The selection behavior when inserting a tab.
@@ -509,6 +524,9 @@ class TabBar<T> extends Widget {
     case 'mouseup':
       this._evtMouseUp(event as MouseEvent);
       break;
+    case 'dblclick':
+      this._evtDblClick(event as MouseEvent);
+      break;
     case 'keydown':
       this._evtKeyDown(event as KeyboardEvent);
       break;
@@ -524,6 +542,7 @@ class TabBar<T> extends Widget {
    */
   protected onBeforeAttach(msg: Message): void {
     this.node.addEventListener('mousedown', this);
+    this.node.addEventListener('dblclick', this);
   }
 
   /**
@@ -531,6 +550,7 @@ class TabBar<T> extends Widget {
    */
   protected onAfterDetach(msg: Message): void {
     this.node.removeEventListener('mousedown', this);
+    this.node.removeEventListener('dblclick', this);
     this._releaseMouse();
   }
 
@@ -548,7 +568,64 @@ class TabBar<T> extends Widget {
       let zIndex = current ? n : n - i - 1;
       content[i] = renderer.renderTab({ title, current, zIndex });
     }
+    if ((!this._dragData || !this._dragData.dragActive) && this.addButtonEnabled) {
+      content[titles.length] = h.div({ className: 'lm-TabBar-addButton' })
+    }
     VirtualDOM.render(content, this.contentNode);
+  }
+
+  /**
+   * Handle the `'dblclick'` event for the tab bar.
+   */
+  private _evtDblClick(event: MouseEvent): void {
+
+    let tabs = this.contentNode.children;
+
+    // Find the index of the released tab.
+    let index = ArrayExt.findFirstIndex(tabs, tab => {
+      return ElementExt.hitTest(tab, event.clientX, event.clientY);
+    });
+
+    let title = this.titles[index];
+    let label = tabs[index].querySelector('.lm-TabBar-tabLabel') as HTMLElement;
+    if (label && label.contains(event.target as HTMLElement)) {
+
+      let value = title.label || '';
+
+      // Clear the label element
+      let oldValue = label.innerHTML;
+      label.innerHTML = "";
+
+      let input = document.createElement('input');
+      input.classList.add('lm-TabBar-tabInput');
+      input.value = value;
+      label.appendChild(input);
+
+      let onblur = () => {
+        input.removeEventListener('blur', onblur);
+        label.innerHTML = oldValue;
+        title.label = title.caption = input.value;
+      }
+
+      input.addEventListener('dblclick', (event: Event) => event.stopPropagation());
+      input.addEventListener('blur', onblur);
+      input.addEventListener('keydown', (event: KeyboardEvent) => {
+        if (event.key === 'Enter') {
+          if (input.value !== '') {
+            title.label = title.caption = input.value;
+          }
+          onblur();
+        } else if (event.key === 'Escape') {
+          onblur();
+        }
+      });
+      input.select();
+      input.focus();
+
+      if (label.children.length > 0) {
+        (label.children[0] as HTMLElement).focus();
+      }
+    }
   }
 
   /**
@@ -617,8 +694,9 @@ class TabBar<T> extends Widget {
     // Add the document mouse up listener.
     document.addEventListener('mouseup', this, true);
 
-    // Do nothing else if the middle button is clicked.
-    if (event.button === 1) {
+    // Do nothing else if the middle button is clicked
+    // or the add button
+    if (event.button === 1 || (this.addButtonEnabled && index === (tabs.length - 1))) {
       return;
     }
 
@@ -669,6 +747,11 @@ class TabBar<T> extends Widget {
 
     // Lookup the tab nodes.
     let tabs = this.contentNode.children;
+
+    // Bail if the add button was clicked
+    if (this.addButtonEnabled && (data.index === tabs.length - 1)) {
+      return;
+    }
 
     // Bail early if the drag threshold has not been met.
     if (!data.dragActive && !Private.dragExceeded(data, event)) {
@@ -725,6 +808,9 @@ class TabBar<T> extends Widget {
       }
     }
 
+    // Hide the addition button
+    this.contentNode.children[this.contentNode.children.length - 1].classList.add('lm-mod-hidden');
+
     // Update the positions of the tabs.
     Private.layoutTabs(tabs, data, event, this._orientation);
   }
@@ -772,6 +858,12 @@ class TabBar<T> extends Widget {
         return;
       }
 
+      // Handle clicking on the add button
+      if (this.addButtonEnabled && (index === tabs.length - 1)) {
+        this._tabAddRequested.emit({});
+        return;
+      }
+
       // Ignore the release if the title is not closable.
       let title = this._titles[index];
       if (!title.closable) {
@@ -802,6 +894,9 @@ class TabBar<T> extends Widget {
 
     // Position the tab at its final resting position.
     Private.finalizeTabPosition(data, this._orientation);
+
+    // Show the addition button
+    this.contentNode.children[this.contentNode.children.length - 1].classList.remove('lm-mod-hidden');
 
     // Remove the dragging class from the tab so it can be transitioned.
     data.tab.classList.remove('lm-mod-dragging');
@@ -1033,6 +1128,7 @@ class TabBar<T> extends Widget {
   private _tabMoved = new Signal<this, TabBar.ITabMovedArgs<T>>(this);
   private _currentChanged = new Signal<this, TabBar.ICurrentChangedArgs<T>>(this);
   private _tabCloseRequested = new Signal<this, TabBar.ITabCloseRequestedArgs<T>>(this);
+  private _tabAddRequested = new Signal<this, TabBar.ITabAddRequestedArgs>(this);
   private _tabDetachRequested = new Signal<this, TabBar.ITabDetachRequestedArgs<T>>(this);
   private _tabActivateRequested = new Signal<this, TabBar.ITabActivateRequestedArgs<T>>(this);
 }
@@ -1137,6 +1233,13 @@ namespace TabBar {
     allowDeselect?: boolean;
 
     /**
+     * Whether the add button is enabled.
+     *
+     * The default is `false`.
+     */
+    addButtonEnabled?: boolean;
+
+    /**
      * The selection behavior when inserting a tab.
      *
      * The default is `'select-tab-if-needed'`.
@@ -1235,6 +1338,13 @@ namespace TabBar {
      * The title for the tab.
      */
     readonly title: Title<T>;
+  }
+
+  /**
+   * The arguments object for the `tabAddRequested` signal.
+   */
+  export
+  interface ITabAddRequestedArgs {
   }
 
   /**
@@ -1340,13 +1450,23 @@ namespace TabBar {
       let style = this.createTabStyle(data);
       let className = this.createTabClass(data);
       let dataset = this.createTabDataset(data);
-      return (
-        h.li({ key, className, title, style, dataset },
-          this.renderIcon(data),
-          this.renderLabel(data),
-          this.renderCloseIcon(data)
-        )
-      );
+
+      if (data.title.closable) {
+        return (
+          h.li({ key, className, title, style, dataset },
+            this.renderIcon(data),
+            this.renderLabel(data),
+            this.renderCloseIcon(data)
+          )
+        );
+      } else {
+        return (
+          h.li({ key, className, title, style, dataset },
+            this.renderIcon(data),
+            this.renderLabel(data),
+          )
+        );
+      }
     }
 
     /**
@@ -1740,7 +1860,7 @@ namespace Private {
     let targetEnd = targetPos + data.tabSize;
 
     // Update the relative tab positions.
-    for (let i = 0, n = tabs.length; i < n; ++i) {
+    for (let i = 0, n = tabs.length - 1; i < n; ++i) {
       let pxPos: string;
       let layout = data.tabLayout![i];
       let threshold = layout.pos + (layout.size >> 1);

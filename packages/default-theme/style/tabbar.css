@@ -40,6 +40,14 @@
 }
 
 
+.lm-TabBar-tabLabel .lm-TabBar-tabInput {
+  padding: 0px;
+  border: 0px;
+  outline: none;
+  font: 12px Helvetica, Arial, sans-serif
+}
+
+
 /* <DEPRECATED> */ .p-TabBar-tab.p-mod-current, /* </DEPRECATED> */
 .lm-TabBar-tab.lm-mod-current {
   background: white;
@@ -81,6 +89,7 @@
 /* <DEPRECATED> */
 .p-TabBar-tab.p-mod-closable > .p-TabBar-tabCloseIcon,
 /* </DEPRECATED> */
+.lm-TabBar-content > .lm-TabBar-addButton,
 .lm-TabBar-tab.lm-mod-closable > .lm-TabBar-tabCloseIcon {
   margin-left: 4px;
 }
@@ -91,6 +100,11 @@
 /* </DEPRECATED> */
 .lm-TabBar-tab.lm-mod-closable > .lm-TabBar-tabCloseIcon:before {
   content: '\f00d';
+  font-family: FontAwesome;
+}
+
+.lm-TabBar-content > .lm-TabBar-addButton:before {
+  content: '\f067';
   font-family: FontAwesome;
 }
 

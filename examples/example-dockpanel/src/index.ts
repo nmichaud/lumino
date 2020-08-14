@@ -355,6 +355,11 @@ function main(): void {
   dock.addWidget(b2, { mode: 'split-right', ref: y1 });
   dock.id = 'dock';
 
+  dock.widgetAddRequested.connect((sender: DockPanel, args: DockPanel.IWidgetAddRequestedArgs<Widget>) => {
+    let w = new ContentWidget("Green");
+    sender.addWidget(w, { ref: args.tabBar.titles[0].owner });    
+  });
+
   let savedLayouts: DockPanel.ILayoutConfig[] = [];
 
   commands.addCommand('save-dock-layout', {

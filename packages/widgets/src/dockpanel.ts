@@ -127,6 +127,14 @@ class DockPanel extends Widget {
   }
 
   /**
+   * A signal emitted when the add button on a tab bar is clicked.
+   *
+   */
+  get widgetAddRequested(): ISignal<this, DockPanel.IWidgetAddRequestedArgs<Widget>> {
+    return this._widgetAddRequested;
+  }
+
+  /**
    * The overlay used by the dock panel.
    */
   readonly overlay: DockPanel.IOverlay;
@@ -874,6 +882,7 @@ class DockPanel extends Widget {
     // TODO do we really want to enforce *all* of these?
     tabBar.tabsMovable = this._tabsMovable;
     tabBar.allowDeselect = false;
+    tabBar.addButtonEnabled = true;
     tabBar.removeBehavior = 'select-previous-tab';
     tabBar.insertBehavior = 'select-tab-if-needed';
 
@@ -883,6 +892,7 @@ class DockPanel extends Widget {
     tabBar.tabCloseRequested.connect(this._onTabCloseRequested, this);
     tabBar.tabDetachRequested.connect(this._onTabDetachRequested, this);
     tabBar.tabActivateRequested.connect(this._onTabActivateRequested, this);
+    tabBar.tabAddRequested.connect(this._onTabAddRequested, this);
 
     // Return the initialized tab bar.
     return tabBar;
@@ -926,6 +936,16 @@ class DockPanel extends Widget {
 
     // Schedule an emit of the layout modified signal.
     MessageLoop.postMessage(this, Private.LayoutModified);
+  }
+
+  /**
+   * Handle the `tabAddRequested` signal from the tab bar.
+   */
+  private _onTabAddRequested(sender: TabBar<Widget>, args: TabBar.ITabAddRequestedArgs): void {
+    this._widgetAddRequested.emit({
+      tabBar: sender
+    });
+    //this.addWidget(new Widget(), { ref: sender.titles[0].owner })
   }
 
   /**
@@ -998,6 +1018,9 @@ class DockPanel extends Widget {
   private _tabsMovable: boolean = true;
   private _pressData: Private.IPressData | null = null;
   private _layoutModified = new Signal<this, void>(this);
+
+  private _widgetAddRequested = new Signal<this, DockPanel.IWidgetAddRequestedArgs<Widget>>(this);
+
 }
 
 
@@ -1327,6 +1350,18 @@ namespace DockPanel {
    */
   export
   const defaultRenderer = new Renderer();
+
+
+  /**
+   * The arguments object for the `addRequested` signal.
+   */
+  export
+  interface IWidgetAddRequestedArgs<T> {
+    /**
+     * The tabbar.
+     */
+    tabBar: TabBar<T>;
+  }
 }
 
 
