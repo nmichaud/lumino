@@ -882,7 +882,7 @@ class DockPanel extends Widget {
     // TODO do we really want to enforce *all* of these?
     tabBar.tabsMovable = this._tabsMovable;
     tabBar.allowDeselect = false;
-    tabBar.addButtonEnabled = true;
+    tabBar.addButtonEnabled = false;
     tabBar.removeBehavior = 'select-previous-tab';
     tabBar.insertBehavior = 'select-tab-if-needed';
 
@@ -1005,7 +1005,7 @@ class DockPanel extends Widget {
       /* <DEPRECATED> */
       tab.classList.remove('p-mod-hidden');
       /* </DEPRECATED> */;
-      sender.contentNode.children[sender.contentNode.children.length - 1].classList.remove('lm-mod-hidden');
+      sender.addButtonNode.classList.remove('lm-mod-hidden');
     });
 
     // Start the drag operation and cleanup when done.

@@ -315,6 +315,19 @@ class TabBar<T> extends Widget {
     return this.node.getElementsByClassName('lm-TabBar-content')[0] as HTMLUListElement;
   }
 
+
+  /**
+   * The tab bar add node.
+   *
+   * #### Notes
+   * This is the node which holds the add button.
+   *
+   * Modifying this node directly can lead to undefined behavior.
+   */
+  get addButtonNode(): HTMLDivElement {
+    return this.node.getElementsByClassName('lm-TabBar-addButton')[0] as HTMLDivElement;
+  }
+
   /**
    * Add a tab to the end of the tab bar.
    *
@@ -568,9 +581,6 @@ class TabBar<T> extends Widget {
       let zIndex = current ? n : n - i - 1;
       content[i] = renderer.renderTab({ title, current, zIndex });
     }
-    if ((!this._dragData || !this._dragData.dragActive) && this.addButtonEnabled) {
-      content[titles.length] = h.div({ className: 'lm-TabBar-addButton' })
-    }
     VirtualDOM.render(content, this.contentNode);
   }
 
@@ -585,6 +595,11 @@ class TabBar<T> extends Widget {
     let index = ArrayExt.findFirstIndex(tabs, tab => {
       return ElementExt.hitTest(tab, event.clientX, event.clientY);
     });
+
+    // Do nothing if the press is not on a tab.
+    if (index === -1) {
+      return;
+    }
 
     let title = this.titles[index];
     let label = tabs[index].querySelector('.lm-TabBar-tabLabel') as HTMLElement;
@@ -656,6 +671,12 @@ class TabBar<T> extends Widget {
       return;
     }
 
+    // Handle clicking on the add button
+    let addButtonClicked = false;
+    if (this.addButtonEnabled && this.addButtonNode.contains(event.target as HTMLElement)) {
+      addButtonClicked = true;
+    }
+
     // Lookup the tab nodes.
     let tabs = this.contentNode.children;
 
@@ -665,7 +686,7 @@ class TabBar<T> extends Widget {
     });
 
     // Do nothing if the press is not on a tab.
-    if (index === -1) {
+    if (index === -1 && !addButtonClicked) {
       return;
     }
 
@@ -695,8 +716,8 @@ class TabBar<T> extends Widget {
     document.addEventListener('mouseup', this, true);
 
     // Do nothing else if the middle button is clicked
-    // or the add button
-    if (event.button === 1 || (this.addButtonEnabled && index === (tabs.length - 1))) {
+    // or tabbar add button is clicked
+    if (event.button === 1 || addButtonClicked) {
       return;
     }
 
@@ -747,11 +768,6 @@ class TabBar<T> extends Widget {
 
     // Lookup the tab nodes.
     let tabs = this.contentNode.children;
-
-    // Bail if the add button was clicked
-    if (this.addButtonEnabled && (data.index === tabs.length - 1)) {
-      return;
-    }
 
     // Bail early if the drag threshold has not been met.
     if (!data.dragActive && !Private.dragExceeded(data, event)) {
@@ -809,7 +825,7 @@ class TabBar<T> extends Widget {
     }
 
     // Hide the addition button
-    this.contentNode.children[this.contentNode.children.length - 1].classList.add('lm-mod-hidden');
+    this.addButtonNode.classList.add('lm-mod-hidden');
 
     // Update the positions of the tabs.
     Private.layoutTabs(tabs, data, event, this._orientation);
@@ -845,6 +861,12 @@ class TabBar<T> extends Widget {
       // Clear the drag data.
       this._dragData = null;
 
+      // Handle clicking on the add button
+      if (this.addButtonEnabled && this.addButtonNode.contains(event.target as HTMLElement)) {
+        this._tabAddRequested.emit({});
+        return;
+      }
+
       // Lookup the tab nodes.
       let tabs = this.contentNode.children;
 
@@ -855,12 +877,6 @@ class TabBar<T> extends Widget {
 
       // Do nothing if the release is not on the original pressed tab.
       if (index !== data.index) {
-        return;
-      }
-
-      // Handle clicking on the add button
-      if (this.addButtonEnabled && (index === tabs.length - 1)) {
-        this._tabAddRequested.emit({});
         return;
       }
 
@@ -896,7 +912,7 @@ class TabBar<T> extends Widget {
     Private.finalizeTabPosition(data, this._orientation);
 
     // Show the addition button
-    this.contentNode.children[this.contentNode.children.length - 1].classList.remove('lm-mod-hidden');
+    this.addButtonNode.classList.remove('lm-mod-hidden');
 
     // Remove the dragging class from the tab so it can be transitioned.
     data.tab.classList.remove('lm-mod-dragging');
@@ -985,9 +1001,6 @@ class TabBar<T> extends Widget {
 
     // Clear the cursor override.
     data.override!.dispose();
-
-    // Show the addition button
-    //this.contentNode.children[this.contentNode.children.length - 1].classList.remove('lm-mod-hidden');
 
     // Clear the dragging style classes.
     data.tab.classList.remove('lm-mod-dragging');
@@ -1625,6 +1638,13 @@ namespace TabBar {
    */
   export
   const defaultRenderer = new Renderer();
+
+  /**
+   * A selector which matches the close icon node in a tab.
+   */
+  export
+  const addButtonSelector = '.lm-TabBar-addButton';
+
 }
 
 
@@ -1767,6 +1787,10 @@ namespace Private {
     content.classList.add('p-TabBar-content');
     /* </DEPRECATED> */
     node.appendChild(content);
+
+    let add = document.createElement('div');
+    add.className = 'lm-TabBar-addButton';
+    node.appendChild(add);
     return node;
   }
 
@@ -1865,7 +1889,7 @@ namespace Private {
     let targetEnd = targetPos + data.tabSize;
 
     // Update the relative tab positions.
-    for (let i = 0, n = tabs.length - 1; i < n; ++i) {
+    for (let i = 0, n = tabs.length; i < n; ++i) {
       let pxPos: string;
       let layout = data.tabLayout![i];
       let threshold = layout.pos + (layout.size >> 1);

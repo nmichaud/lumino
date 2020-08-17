@@ -21,12 +21,14 @@
 /* <DEPRECATED> */ .p-TabBar[data-orientation='horizontal'], /* </DEPRECATED> */
 .lm-TabBar[data-orientation='horizontal'] {
   flex-direction: row;
+  align-items: flex-end;
 }
 
 
 /* <DEPRECATED> */ .p-TabBar[data-orientation='vertical'], /* </DEPRECATED> */
 .lm-TabBar[data-orientation='vertical'] {
   flex-direction: column;
+  align-items: flex-end;
 }
 
 
@@ -94,8 +96,8 @@
   position: relative;
 }
 
-.lm-TabBar-content .lm-TabBar-addButton.lm-mod-hidden {
-  visibility: hidden;
+.lm-TabBar .lm-TabBar-addButton.lm-mod-hidden {
+  display: none;
 }
 
 /* <DEPRECATED> */

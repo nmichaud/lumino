@@ -89,9 +89,14 @@
 /* <DEPRECATED> */
 .p-TabBar-tab.p-mod-closable > .p-TabBar-tabCloseIcon,
 /* </DEPRECATED> */
-.lm-TabBar-content > .lm-TabBar-addButton,
 .lm-TabBar-tab.lm-mod-closable > .lm-TabBar-tabCloseIcon {
   margin-left: 4px;
+}
+
+
+.lm-TabBar .lm-TabBar-addButton {
+  display: inline-block;
+  border-bottom: 1px solid #C0C0C0;
 }
 
 
@@ -103,7 +108,7 @@
   font-family: FontAwesome;
 }
 
-.lm-TabBar-content > .lm-TabBar-addButton:before {
+.lm-TabBar .lm-TabBar-addButton:before {
   content: '\f067';
   font-family: FontAwesome;
 }
