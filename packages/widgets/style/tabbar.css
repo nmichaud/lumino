@@ -94,6 +94,9 @@
   position: relative;
 }
 
+.lm-TabBar-content .lm-TabBar-addButton.lm-mod-hidden {
+  visibility: hidden;
+}
 
 /* <DEPRECATED> */
 .p-TabBar.p-mod-dragging[data-orientation='horizontal'] .p-TabBar-tab,

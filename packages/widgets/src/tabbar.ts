@@ -986,6 +986,9 @@ class TabBar<T> extends Widget {
     // Clear the cursor override.
     data.override!.dispose();
 
+    // Show the addition button
+    //this.contentNode.children[this.contentNode.children.length - 1].classList.remove('lm-mod-hidden');
+
     // Clear the dragging style classes.
     data.tab.classList.remove('lm-mod-dragging');
     this.removeClass('lm-mod-dragging');
@@ -993,6 +996,8 @@ class TabBar<T> extends Widget {
     data.tab.classList.remove('p-mod-dragging');
     this.removeClass('p-mod-dragging');
     /* </DEPRECATED> */
+
+
   }
 
   /**
