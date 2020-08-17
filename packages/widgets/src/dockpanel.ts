@@ -1005,7 +1005,6 @@ class DockPanel extends Widget {
       /* <DEPRECATED> */
       tab.classList.remove('p-mod-hidden');
       /* </DEPRECATED> */;
-      sender.addButtonNode.classList.remove('lm-mod-hidden');
     });
 
     // Start the drag operation and cleanup when done.

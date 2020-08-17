@@ -824,9 +824,6 @@ class TabBar<T> extends Widget {
       }
     }
 
-    // Hide the addition button
-    this.addButtonNode.classList.add('lm-mod-hidden');
-
     // Update the positions of the tabs.
     Private.layoutTabs(tabs, data, event, this._orientation);
   }
@@ -910,9 +907,6 @@ class TabBar<T> extends Widget {
 
     // Position the tab at its final resting position.
     Private.finalizeTabPosition(data, this._orientation);
-
-    // Show the addition button
-    this.addButtonNode.classList.remove('lm-mod-hidden');
 
     // Remove the dragging class from the tab so it can be transitioned.
     data.tab.classList.remove('lm-mod-dragging');
